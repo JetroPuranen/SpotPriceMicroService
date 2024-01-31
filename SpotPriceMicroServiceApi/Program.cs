@@ -7,18 +7,17 @@ using Newtonsoft.Json;
 
 class Program
 {
-    private static int currentId = 1;
-
     static async Task Main()
     {
         while (true)
         {
             var prices = await GetElectricityPrices();
 
-            
+            //Id päivämäärän mukaan
+            prices.Sort((x, y) => y.StartDate.CompareTo(x.StartDate));
+
             AssignIds(prices);
 
-           
             await SavePricesToDatabase(prices);
 
             await Task.Delay(TimeSpan.FromHours(1));
@@ -27,9 +26,10 @@ class Program
 
     static void AssignIds(List<ElectricityPrice> prices)
     {
-        foreach (var price in prices)
+        for (int i = 0; i < prices.Count; i++)
         {
-            price.Id = currentId++;
+            // Aseta ID alkuperäisessä järjestyksessä (vastoin JSON-datassa olevaa järjestystä)
+            prices[i].Id = i + 1;
         }
     }
 
@@ -60,26 +60,21 @@ class Program
 
     static async Task SavePricesToDatabase(List<ElectricityPrice> prices)
     {
-       
         string jsonPrices = JsonConvert.SerializeObject(prices);
 
-        
-        var apiUrl = ""; //Update with the actual port and endpoint
+        var apiUrl = "http://localhost:5098/api/saveprices"; 
 
-        //HttpClient
         using (var httpClient = new HttpClient())
         {
-            
             var content = new StringContent(jsonPrices, Encoding.UTF8, "application/json");
 
             try
             {
-                //HTTP POST-request
                 var response = await httpClient.PostAsync(apiUrl, content);
 
-                
                 if (response.IsSuccessStatusCode)
                 {
+                    
                     Console.WriteLine("Hinnat lähetetty onnistuneesti.");
                 }
                 else
